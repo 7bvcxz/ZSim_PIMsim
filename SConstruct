@@ -79,7 +79,7 @@ def buildSim(cppFlags, dir, type, pgo=None):
     ##env["CPPFLAGS"] += " -DDEBUG=1"
 
     # Be a Warning Nazi? (recommended)
-    env["CPPFLAGS"] += " -Werror "
+    #env["CPPFLAGS"] += " -Werror "
 
     # Enables lib and harness to use the same info/log code,
     # but only lib uses pin locks for thread safety
@@ -140,8 +140,8 @@ def buildSim(cppFlags, dir, type, pgo=None):
         DRAMSIMPATH = os.environ["DRAMSIMPATH"]
         env["LINKFLAGS"] += " -Wl,-R" + DRAMSIMPATH
         env["PINLIBPATH"] += [DRAMSIMPATH]
-        env["CPPPATH"] += [DRAMSIMPATH]
-        env["PINLIBS"] += ["dramsim"]
+        env["CPPPATH"] += [DRAMSIMPATH + "/src"]
+        env["PINLIBS"] += ["dramsim3"]
         env["CPPFLAGS"] += " -D_WITH_DRAMSIM_=1 "
 
     env["CPPPATH"] += ["."]

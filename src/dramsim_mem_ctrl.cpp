@@ -26,15 +26,19 @@
 #include "dramsim_mem_ctrl.h"
 #include <map>
 #include <string>
+#include <iostream>  // >> kkm << for checking
 #include "event_recorder.h"
 #include "tick_event.h"
 #include "timing_event.h"
 #include "zsim.h"
 
 #ifdef _WITH_DRAMSIM_ //was compiled with dramsim
-#include "DRAMSim.h"
+//>> kkm << changed to next line for dramsim3
+//#include "DRAMSim.h"
+#include "dramsim3.h"
 
-using namespace DRAMSim; // NOLINT(build/namespaces)
+using std::string;
+using namespace dramsim3; // NOLINT(build/namespaces)
 
 class DRAMSimAccEvent : public TimingEvent {
     private:
@@ -57,24 +61,37 @@ class DRAMSimAccEvent : public TimingEvent {
 
         void simulate(uint64_t startCycle) {
             sCycle = startCycle;
-            dram->enqueue(this, startCycle);
+            dram->enqueue(this, startCycle);  // >> kkm << just for a moment
         }
 };
 
-
-DRAMSimMemory::DRAMSimMemory(string& dramTechIni, string& dramSystemIni, string& outputDir, string& traceName,
-        uint32_t capacityMB, uint64_t cpuFreqHz, uint32_t _minLatency, uint32_t _domain, const g_string& _name)
+DRAMSimMemory::DRAMSimMemory(string& dramTechIni, string& dramSystemIni, string& outputDir, string& traceName, uint32_t capacityMB, uint64_t cpuFreqHz, uint32_t _minLatency, uint32_t _domain, const g_string& _name)
 {
     curCycle = 0;
     minLatency = _minLatency;
     // NOTE: this will alloc DRAM on the heap and not the glob_heap, make sure only one process ever handles this
-    dramCore = getMemorySystemInstance(dramTechIni, dramSystemIni, outputDir, traceName, capacityMB);
-    dramCore->setCPUClockSpeed(cpuFreqHz);
 
-    TransactionCompleteCB *read_cb = new Callback<DRAMSimMemory, void, unsigned, uint64_t, uint64_t>(this, &DRAMSimMemory::DRAM_read_return_cb);
-    TransactionCompleteCB *write_cb = new Callback<DRAMSimMemory, void, unsigned, uint64_t, uint64_t>(this, &DRAMSimMemory::DRAM_write_return_cb);
-    dramCore->RegisterCallbacks(read_cb, write_cb, nullptr);
+	// >> kkm  delete DRAMsim2 function
+	// dramCore = getMemorySystemInstance(dramTechIni, dramSystemIni, outputDir, traceName, capacityMB);
+	// dramCore->setCPUClockSpeed(cpuFreqHz);
+    //TransactionCompleteCB *read_cb = new Callback<DRAMSimMemory, void, unsigned, uint64_t, uint64_t>(this, &DRAMSimMemory::DRAM_read_return_cb);
+    //TransactionCompleteCB *write_cb = new Callback<DRAMSimMemory, void, unsigned, uint64_t, uint64_t>(this, &DRAMSimMemory::DRAM_write_return_cb);
+    //dramCore->RegisterCallbacks(read_cb, write_cb, nullptr);
+    // kkm << 
 
+	// >> kkm for DRAMsim3	
+	std::function<void(uint64_t)> read_cb;
+	std::function<void(uint64_t)> write_cb;
+
+    //read_cb = std::bind(&DRAMSimMemory::DRAM_read_return_cb, this, 0, curCycle);	
+    read_cb = std::bind(&DRAMSimMemory::DRAM_read_return_cb, this, 0, std::placeholders::_1, 0);	
+    //write_cb = std::bind(&DRAMSimMemory::DRAM_write_return_cb, this, 0, curCycle);	
+    write_cb = std::bind(&DRAMSimMemory::DRAM_write_return_cb, this, 0, std::placeholders::_1, 0);	
+
+	dramCore = GetMemorySystem(dramTechIni, outputDir, read_cb, write_cb);
+    dramCore->RegisterCallbacks(read_cb, write_cb);
+	// kkm <<
+	
     domain = _domain;
     TickEvent<DRAMSimMemory>* tickEv = new TickEvent<DRAMSimMemory>(this, domain);
     tickEv->queue(0);  // start the sim at time 0
@@ -124,16 +141,21 @@ uint64_t DRAMSimMemory::access(MemReq& req) {
 }
 
 uint32_t DRAMSimMemory::tick(uint64_t cycle) {
-    dramCore->update();
+    dramCore->ClockTick();
     curCycle++;
     return 1;
 }
 
 void DRAMSimMemory::enqueue(DRAMSimAccEvent* ev, uint64_t cycle) {
     //info("[%s] %s access to %lx added at %ld, %ld inflight reqs", getName(), ev->isWrite()? "Write" : "Read", ev->getAddr(), cycle, inflightRequests.size());
-    dramCore->addTransaction(ev->isWrite(), ev->getAddr());
-    inflightRequests.insert(std::pair<Address, DRAMSimAccEvent*>(ev->getAddr(), ev));
+    // dramCore->addTransaction(ev->isWrite(), ev->getAddr()); >> kkm << turned off DRAMsim2 func.
+	//std::cout << "kkm\t evoke DRAMSimMemory::enqueue\n";
+	dramCore->AddTransaction(ev->getAddr(), ev->isWrite());
+	//std::cout << "kkm\t ended AddTransaction\n";
+    inflightRequests.insert(std::pair<Address, DRAMSimAccEvent*>(ev->getAddr(), ev)); // >> kkm << just for a moment
+	//std::cout << "kkm\t ended inflightRequests.insert\n";
     ev->hold();
+	//std::cout << "kkm\t ended ev->hold()\n";
 }
 
 void DRAMSimMemory::DRAM_read_return_cb(uint32_t id, uint64_t addr, uint64_t memCycle) {

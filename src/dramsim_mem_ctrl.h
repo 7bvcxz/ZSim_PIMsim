@@ -33,8 +33,8 @@
 #include "pad.h"
 #include "stats.h"
 
-namespace DRAMSim {
-    class MultiChannelMemorySystem;
+namespace dramsim3 {
+    class MemorySystem;
 };
 
 class DRAMSimAccEvent;
@@ -45,7 +45,7 @@ class DRAMSimMemory : public MemObject { //one DRAMSim controller
         uint32_t minLatency;
         uint32_t domain;
 
-        DRAMSim::MultiChannelMemorySystem* dramCore;
+        dramsim3::MemorySystem* dramCore;
 
         std::multimap<uint64_t, DRAMSimAccEvent*> inflightRequests;
 
@@ -60,8 +60,7 @@ class DRAMSimMemory : public MemObject { //one DRAMSim controller
         PAD();
 
     public:
-        DRAMSimMemory(std::string& dramTechIni, std::string& dramSystemIni, std::string& outputDir, std::string& traceName, uint32_t capacityMB,
-                uint64_t cpuFreqHz,  uint32_t _minLatency, uint32_t _domain, const g_string& _name);
+        DRAMSimMemory(std::string& dramTechIni, std::string& dramSystemIni, std::string& outputDir, std::string& traceName, uint32_t capacityMB, uint64_t cpuFreqHz, uint32_t _minLatency, uint32_t _domain, const g_string& _name);
 
         const char* getName() {return name.c_str();}
 
