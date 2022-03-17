@@ -1,4 +1,8 @@
 .sconsign.dblite
 DRAMsim3
+PIMsim
 build
 *.swp
+*.h5
+*.out
+*.log

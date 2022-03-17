@@ -1,0 +1,3 @@
+/home/kkm0411/PIM-Simulator/Zsim_PIM/app/BASIC/conv_script_10/CMakeFiles/rebuild_cache.dir
+/home/kkm0411/PIM-Simulator/Zsim_PIM/app/BASIC/conv_script_10/CMakeFiles/edit_cache.dir
+/home/kkm0411/PIM-Simulator/Zsim_PIM/app/BASIC/conv_script_10/CMakeFiles/conv_test.dir
